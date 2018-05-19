@@ -28,7 +28,7 @@ int sep_prefix_name(char path[256]) {
    exit(EXIT_FAILURE);
 }
 
-/* Returns a pointer to a complete posix_header from tar.h */
+/* Returns a pointer to a complete posix_header struct from tar.h */
 struct Header* get_header(FILE* fp, char path[256]) {
    Header *header = NULL;
    struct stat st;
@@ -83,3 +83,16 @@ int main (int argc, char *argv[])
 {
    return 0;
 }
+
+/*creating*/
+/*get posix struct*/
+/*write info from struct to tar file*/
+/*write file to tar file*/
+/*done*/
+/*this is just the process of writing one file,omitting directories*/
+
+/*extracting*/
+/*create file*/
+/*write from info in tar*/
+/*done*/
+/*again this doesnt tke into account directoories or huge paths*/
