@@ -31,7 +31,7 @@ int sep_prefix_name(char path[256]) {
 /* Returns a pointer to a complete posix_header from tar.h */
 struct Header* get_header(FILE* fp, char path[256]) {
    Header *header = NULL;
-   struct stat *stat = NULL;
+   struct stat st;
    int i;
 
    /* name[100], offset: 0; prefix[155], offset: 345 */
@@ -45,26 +45,37 @@ struct Header* get_header(FILE* fp, char path[256]) {
    }
 
    /* Need lstat for the remaining fields */
-   if (lstat(path, stat) < 0) {
+   if (lstat(path, &st) < 0) {
       fprintf(stderr, "lstat failed\n");
       exit(EXIT_FAILURE);
    }
 
    /* mode[8]; offset: 100 */
-   strmode(stat->st_mode, header->mode);
-   /* uid[8]; offset: 108 */
-   /* gid[8]; offset: 116 */
-   /* size[12]; offset: 124 */
-   /* mtime[12]; offset: 136 */
-   /* chksum[8]; offset: 148 */
-   /* typeflag; offset: 156 */
-   /* linkname[100]; offset: 157 */
-   /* magic[6]; offset: 257 */
-   /* version[2]; offset: 263 */
-   /* uname[32]; offset: 265 */
-   /* gname[32]; offset: 297 */
-   /* devmajor[8]; offset: 329 */
-   /* devminor[8]; offset: 337 */
+   sprintf(header -> mode, "%07o", st.st_mode);
+
+   /* uid[8];           offset: 108 */
+   sprintf(header -> uid, "%07o", st.st_uid);
+
+   /* gid[8];           offset: 116 */
+   sprintf(header -> gid, "%07o", st.st_gid);
+
+   /* size[12];         offset: 124 */
+   sprintf(header -> size, "%011o", (int)st.st_size);
+
+   /* mtime[12];        offset: 136 */
+   sprintf(header -> size, "%011o", (int)st.st_mtime);
+
+   /* chksum[8];        offset: 148 */
+   /* typeflag;         offset: 156 */
+   /* linkname[100];    offset: 157 */
+   /* magic[6];         offset: 257 */
+   /* version[2];       offset: 263 */
+   /* uname[32];        offset: 265 */
+   /* gname[32];        offset: 297 */
+
+   /*wouldnt these just default to 0?*/
+   /* devmajor[8];      offset: 329 */
+   /* devminor[8];      offset: 337 */
    return NULL;
 }
 
