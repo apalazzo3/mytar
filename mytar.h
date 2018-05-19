@@ -8,6 +8,7 @@
 #include <tar.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <dirent.h>
 #include <unistd.h>
 
 /* Copy of the posix_header struct found in spec */

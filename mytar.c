@@ -1,5 +1,7 @@
+/*#define _GNU_SOURCE*/
+#define _BSD_SOURCE
+
 #include "mytar.h"
-#include <string.h>
 
 /* Helper function to get the given file from a string */
 FILE* get_fp(char path[256]) {
@@ -28,9 +30,10 @@ int sep_prefix_name(char path[256]) {
 
 /* Returns a pointer to a complete posix_header from tar.h */
 struct Header* get_header(FILE* fp, char path[256]) {
-   Header *header;
-   struct stat *stat;
+   Header *header = NULL;
+   struct stat *stat = NULL;
    int i;
+
    /* name[100], offset: 0; prefix[155], offset: 345 */
    if (strlen(path) > 100) {
       i = sep_prefix_name(path);
@@ -40,11 +43,13 @@ struct Header* get_header(FILE* fp, char path[256]) {
    else {
       strncpy(header->name, path, strlen(path));
    }
+
    /* Need lstat for the remaining fields */
    if (lstat(path, stat) < 0) {
       fprintf(stderr, "lstat failed\n");
       exit(EXIT_FAILURE);
    }
+
    /* mode[8]; offset: 100 */
    strmode(stat->st_mode, header->mode);
    /* uid[8]; offset: 108 */
@@ -61,4 +66,9 @@ struct Header* get_header(FILE* fp, char path[256]) {
    /* devmajor[8]; offset: 329 */
    /* devminor[8]; offset: 337 */
    return NULL;
+}
+
+int main (int argc, char *argv[])
+{
+   return 0;
 }
