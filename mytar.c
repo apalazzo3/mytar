@@ -1,13 +1,54 @@
 /*#define _GNU_SOURCE*/
 #define _BSD_SOURCE
+#define USAGE "usage: ./mytar [ctxSp[f tarfile]] [file1 [ file 2 [...] ] ]\n"
+#define C_FLAG 0
+#define T_FLAG 1
+#define X_FLAG 2
+#define V_FLAG 3
 
 #include "mytar.h"
+
+/* Helper function to check the command line arguments */
+
+void check_args(int argc, char *argv[], int flags[4]){
+   if(argc == 1){
+      fprintf(stderr, "./mytar: you must specify at least one of the 'ctx' options.\n");
+      exit(EXIT_FAILURE);
+   }
+   
+   if(argc != 4){
+      fprintf(stderr, USAGE);
+      exit(EXIT_FAILURE);
+   }
+   /*not our job to worry about spaces between flags*/
+
+   if(strchr(argv[1], 'c') != NULL){
+      flags[C_FLAG] = 1;
+   }
+   if(strchr(argv[1], 't') != NULL){
+      flags[T_FLAG] = 1;
+   }
+   if(strchr(argv[1], 'x') != NULL){
+      flags[X_FLAG] = 1;
+   }
+   if(strchr(argv[1], 'v') != NULL){
+      flags[V_FLAG] = 1;
+   }
+
+   /* now check present flags (ex. cant have c and x and t) */
+   if((flags[C_FLAG] == 1 && flags[T_FLAG] == 1) || (flags[C_FLAG] == 1 && flags[X_FLAG] == 1) || (flags[T_FLAG] == 1 && flags [X_FLAG] == 1)){
+      fprintf(stderr, "./mytar: you may only choose one of the ctx options.\n");
+      fprintf(stderr, USAGE);
+      exit(EXIT_FAILURE);
+   }
+   /* return flags array */
+}
 
 /* Helper function to get the given file from a string */
 FILE* get_fp(char path[256]) {
    FILE *fp = fopen(path, "r");
    if (fp == NULL) {
-      fprintf(stderr, "usage");
+      fprintf(stderr, USAGE);
       exit(EXIT_FAILURE);
    }
    

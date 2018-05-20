@@ -31,6 +31,7 @@ typedef struct {
   char prefix[155];
 } Header;
 
+void check_args(int argc, char *argv[], int flags[4]);
 FILE* get_fp(char path[256]);
 int sep_prefix_name(char path[256]);
 struct Header* get_header(FILE* fp, char path[256]);
