@@ -10,7 +10,7 @@
 
 /* Helper function to check the command line arguments */
 
-void check_args(int argc, char *argv[], int flags[4]){
+void check_args(int argc, char *argv[], int *flags){
    if(argc == 1){
       fprintf(stderr, "./mytar: you must specify at least one of the 'ctx' options.\n");
       exit(EXIT_FAILURE);
@@ -41,7 +41,7 @@ void check_args(int argc, char *argv[], int flags[4]){
       fprintf(stderr, USAGE);
       exit(EXIT_FAILURE);
    }
-   /* return flags array */
+
 }
 
 /* Helper function to get the given file from a string */
@@ -70,7 +70,7 @@ int sep_prefix_name(char path[256]) {
 }
 
 /* Returns a pointer to a complete posix_header struct from tar.h */
-struct Header* get_header(FILE* fp, char path[256]) {
+Header* get_header(FILE* fp, char path[256]) {
    Header *header = NULL;
    struct stat st;
    int i;
@@ -122,6 +122,33 @@ struct Header* get_header(FILE* fp, char path[256]) {
 
 int main (int argc, char *argv[])
 {
+   int flags [4];
+   int i;
+   FILE *fp;
+   char path[256];
+   Header *header;
+  
+   /* init flags to zero */
+   for(i = 0; i < 4; i++)
+   {
+      flags[i] = 0;
+   }
+
+   /* check args for errors and which flags are present */
+   check_args(argc, argv, flags);
+
+
+   /* get file pointer from path in argv */
+   strcpy(path, argv[3]);
+   fp = get_fp(path);
+  
+   /* after this point there probably needs to be a loop of some */
+   /* sort in order to deal with all the files specified in the*/
+   /* tree */
+
+   /* create struct header */
+   header = get_header(fp, path);
+
    return 0;
 }
 
