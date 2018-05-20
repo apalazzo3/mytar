@@ -69,11 +69,52 @@ int sep_prefix_name(char path[256]) {
    exit(EXIT_FAILURE);
 }
 
+/* Helper function to calculate the chksum */
+unsigned char chksum(unsigned char *c, size_t s){
+   unsigned char num = 0;
+   while(s-- != 0){
+      num -= *c++;
+   }
+   return num;
+}
+
+/* Helper function (uses chksum) re-calculates header sum */
+unsigned char chksum_2(Header *header){
+   unsigned char sum = 0;
+
+   /* note: keep track of length of things, whether or not to */
+   /* include the ending null chars or not */
+
+   /* compiler loses its shit since things arent stored as uchars */
+   /* note: fixed this ^ but this can be a problem so keep an */
+   /* eye on it */
+   
+   sum += chksum((unsigned char*)(&header -> name), 100);
+   sum += chksum((unsigned char*)(&header -> mode), 8);
+   sum += chksum((unsigned char*)(&header -> uid), 8);
+   sum += chksum((unsigned char*)(&header -> gid), 8);
+   sum += chksum((unsigned char*)(&header -> size), 12);
+   sum += chksum((unsigned char*)(&header -> mtime), 12);
+   sum += chksum((unsigned char*)(&header -> chksum), 8);
+   sum += chksum((unsigned char*)(&header -> typeflag), 1);
+   sum += chksum((unsigned char*)(&header -> linkname), 100);
+   sum += chksum((unsigned char*)(&header -> magic), 6);
+   sum += chksum((unsigned char*)(&header -> version), 2);
+   sum += chksum((unsigned char*)(&header -> uname), 32);
+   sum += chksum((unsigned char*)(&header -> gname), 32);
+   sum += chksum((unsigned char*)(&header -> devmajor), 8);
+   sum += chksum((unsigned char*)(&header -> devminor), 8);
+   sum += chksum((unsigned char*)(&header -> prefix), 155);
+   
+   return sum;
+}
+
 /* Returns a pointer to a complete posix_header struct from tar.h */
 Header* get_header(FILE* fp, char path[256]) {
    Header *header = NULL;
    struct stat st;
    int i;
+   unsigned char temp[] = "       ";
 
    /* name[100], offset: 0; prefix[155], offset: 345 */
    if (strlen(path) > 100) {
@@ -91,6 +132,8 @@ Header* get_header(FILE* fp, char path[256]) {
       exit(EXIT_FAILURE);
    }
 
+   /* might need to add NULL terminators to these (?) */
+
    /* mode[8]; offset: 100 */
    sprintf(header -> mode, "%07o", st.st_mode);
 
@@ -104,9 +147,12 @@ Header* get_header(FILE* fp, char path[256]) {
    sprintf(header -> size, "%011o", (int)st.st_size);
 
    /* mtime[12];        offset: 136 */
-   sprintf(header -> size, "%011o", (int)st.st_mtime);
+   sprintf(header -> mtime, "%011o", (int)st.st_mtime);
 
+   /* given checksum of 7 spaces */
    /* chksum[8];        offset: 148 */
+   sprintf(header -> chksum, "%07o", chksum(temp, 7));
+
    /* typeflag;         offset: 156 */
    /* linkname[100];    offset: 157 */
    /* magic[6];         offset: 257 */
@@ -117,11 +163,16 @@ Header* get_header(FILE* fp, char path[256]) {
    /*wouldnt these just default to 0?*/
    /* devmajor[8];      offset: 329 */
    /* devminor[8];      offset: 337 */
-   return NULL;
+
+   /* checksum recalculation */
+   /* this requires going through every component of the header */
+   /* lets use a helper for this, gonna be a bit big*/
+
+
+   return header;
 }
 
-int main (int argc, char *argv[])
-{
+int main (int argc, char *argv[]){
    int flags [4];
    int i;
    FILE *fp;
@@ -129,8 +180,7 @@ int main (int argc, char *argv[])
    Header *header;
   
    /* init flags to zero */
-   for(i = 0; i < 4; i++)
-   {
+   for(i = 0; i < 4; i++){
       flags[i] = 0;
    }
 

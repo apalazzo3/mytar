@@ -35,5 +35,7 @@ void check_args(int argc, char *argv[], int *flags);
 FILE* get_fp(char path[256]);
 int sep_prefix_name(char path[256]);
 Header* get_header(FILE* fp, char path[256]);
+unsigned char chksum(unsigned char *c, size_t s);
+unsigned char chksum_2(Header *header);
 
 #endif
