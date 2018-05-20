@@ -8,6 +8,7 @@
 #include <tar.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <dirent.h>
 #include <unistd.h>
 
 /* Copy of the posix_header struct found in spec */
@@ -30,8 +31,11 @@ typedef struct {
   char prefix[155];
 } Header;
 
+void check_args(int argc, char *argv[], int *flags);
 FILE* get_fp(char path[256]);
 int sep_prefix_name(char path[256]);
-struct Header* get_header(FILE* fp, char path[256]);
+Header* get_header(FILE* fp, char path[256]);
+unsigned char chksum(unsigned char *c, size_t s);
+unsigned char chksum_2(Header *header);
 
 #endif
