@@ -114,7 +114,7 @@ Header* get_header(FILE* fp, char path[256]) {
    Header *header = NULL;
    struct stat st;
    int i;
-   unsigned char temp[] = "       ";
+   unsigned char temp[] = "       "; /* empty checksum first calc */
 
    /* name[100], offset: 0; prefix[155], offset: 345 */
    if (strlen(path) > 100) {
@@ -167,7 +167,7 @@ Header* get_header(FILE* fp, char path[256]) {
    /* checksum recalculation */
    /* this requires going through every component of the header */
    /* lets use a helper for this, gonna be a bit big*/
-
+   sprintf(header -> chksum, "%70o", chksum_2(header));
 
    return header;
 }
