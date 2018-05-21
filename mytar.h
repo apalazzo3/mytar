@@ -20,7 +20,7 @@ typedef struct {
   char size[12];
   char mtime[12];
   char chksum[8];
-  char typeflag;
+  char typeflag[1];
   char linkname[100];
   char magic[6];
   char version[2];
@@ -37,5 +37,6 @@ int sep_prefix_name(char path[256]);
 Header* get_header(FILE* fp, char path[256]);
 unsigned char chksum(unsigned char *c, size_t s);
 unsigned char chksum_2(Header *header);
+char get_type(struct stat st);
 
 #endif

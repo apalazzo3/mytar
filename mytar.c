@@ -109,12 +109,44 @@ unsigned char chksum_2(Header *header){
    return sum;
 }
 
+/* Helper function to find type of file */
+char get_type(struct stat st){
+   char type = 0;
+
+   switch(st.st_mode & S_IFMT){
+      case S_IFREG:
+         type = '0';
+         break;
+      case S_IFLNK:
+         type = '2';
+         break;
+      case S_IFCHR:
+         type = '3';
+         break;
+      case S_IFBLK:
+         type = '4';
+         break;
+      case S_IFDIR:
+         type = '5';
+         break;
+      case S_IFIFO:
+         type = '6';
+         break;
+      default:
+         type = -1;
+         exit(EXIT_FAILURE);
+   }
+
+   return type;
+}
+
 /* Returns a pointer to a complete posix_header struct from tar.h */
 Header* get_header(FILE* fp, char path[256]) {
    Header *header = NULL;
    struct stat st;
    int i;
    unsigned char temp[] = "       "; /* empty checksum first calc */
+   char type = -1;
 
    /* name[100], offset: 0; prefix[155], offset: 345 */
    /* null-terminated char string */
@@ -154,14 +186,30 @@ Header* get_header(FILE* fp, char path[256]) {
    /* chksum[8];        offset: 148 */
    sprintf(header -> chksum, "%07o", chksum(temp, 7));
 
-   /* typeflag;         offset: 156 */
+   /* typeflag[1];         offset: 156 */
+   type = get_type(st);
+   sprintf(header -> typeflag, "%01o", type);
+
+   /* check first if file is even symlink type  */
    /* linkname[100];    offset: 157 */
+   if(type == '2'){
+      if(readlink(path, header -> linkname, 100) < 0){
+         fprintf(stderr,"usage: could not read link %s\n", path);
+         exit(EXIT_FAILURE);
+      }
+   }
+   else{ /* not symlink */
+      /* note: possibly leave uninitialized */
+   }
+   
    /* magic[6];         offset: 257 */
    /* null-terminated char string */
    strncpy(header->magic, "ustar", 6);
 
    /* version[2];       offset: 263 */
+
    sprintf(header -> version, "00");
+
 
    /* uname[32];        offset: 265 */
    /* file's owner name */
