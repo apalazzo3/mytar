@@ -10,6 +10,9 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <pwd.h>
+#include <grp.h>
 
 /* Copy of the posix_header struct found in spec */
 typedef struct {
@@ -38,5 +41,6 @@ Header* get_header(FILE* fp, char path[256]);
 unsigned char chksum(unsigned char *c, size_t s);
 unsigned char chksum_2(Header *header);
 char get_type(struct stat st);
+void make_tar(Header *header, char path[256], FILE *fp, char * tar_name);
 
 #endif
