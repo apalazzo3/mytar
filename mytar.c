@@ -16,7 +16,7 @@ void check_args(int argc, char *argv[], int *flags){
       exit(EXIT_FAILURE);
    }
    
-   if(argc != 4){
+   if(argc != 4 && argc != 3){
       fprintf(stderr, USAGE);
       exit(EXIT_FAILURE);
    }
@@ -231,8 +231,7 @@ Header* get_header(FILE* fp, char path[256]) {
 
 
 /* check if tar exists for multiple files */
-void make_tar(Header *header, char path[256], FILE *fp, char * tar_name){
-   int fd;
+void make_tar(Header *header, char path[256], FILE *fp, char * tar_name, int fd){
    int i = 0;
    char *file;
    char c;
@@ -244,13 +243,6 @@ void make_tar(Header *header, char path[256], FILE *fp, char * tar_name){
       empty[i] = 0;
    }
 
-   /* check if file exists then delete it */
-   if((fopen(tar_name, "r")) != NULL){
-      remove(tar_name);
-   }
-
-   fd = open(tar_name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-   
    /* write header to tar file */
 
    write(fd, header -> name, 100);
@@ -290,14 +282,14 @@ void make_tar(Header *header, char path[256], FILE *fp, char * tar_name){
    write(fd, file, (num_chars)); 
    write(fd, empty, 1524);
 
-   fclose(fp);
    free(header);
    free(file);
 }
 
 int main (int argc, char *argv[]){
    int flags [4];
-   int i;
+   int i, fd;
+   int created = 0;
    FILE *fp;
    char path[256];
    Header *header;
@@ -312,19 +304,35 @@ int main (int argc, char *argv[]){
 
 
    /* get file pointer from path in argv */
-   strcpy(path, argv[3]);
-   fp = get_fp(path);
+   if(flags[C_FLAG] == 1){
+      strcpy(path, argv[3]);
+      fp = get_fp(path);
+   }
   
    /* after this point there probably needs to be a loop of some */
    /* sort in order to deal with all the files specified in the*/
    /* tree */
+   
+   if(flags[C_FLAG] == 1){
+      /* create struct header */
+      header = get_header(fp, path);
 
-   /* create struct header */
-   header = get_header(fp, path);
+      /* create and write to tar file */
+      if(created == 0){
+         if((fopen(argv[2], "r")) != NULL){
+            remove(argv[2]);
+         }
+         fd = open(argv[2], O_CREAT | O_RDWR, S_IRUSR, S_IWUSR);
+         created = 1;
+      }
+      make_tar(header, path, fp, argv[2], fd);
+   }
+   else if(flags[T_FLAG] == 1){
 
-   /* create and write to tar file */
-   make_tar(header, path, fp, argv[2]);
+   }
+   else if(flags[X_FLAG] == 1){
 
+   }
    return 0;
 }
 
