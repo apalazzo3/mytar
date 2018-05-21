@@ -149,6 +149,7 @@ Header* get_header(FILE* fp, char path[256]) {
    char type = -1;
 
    /* name[100], offset: 0; prefix[155], offset: 345 */
+   /* null-terminated char string */
    if (strlen(path) > 100) {
       i = sep_prefix_name(path);
       strncpy(header->name, (path + i + 1), (strlen(path) - i + 1));
@@ -202,15 +203,30 @@ Header* get_header(FILE* fp, char path[256]) {
    }
    
    /* magic[6];         offset: 257 */
+   /* null-terminated char string */
+   strncpy(header->magic, "ustar", 6);
+
    /* version[2];       offset: 263 */
-   
+
+   sprintf(header -> version, "00");
+
 
    /* uname[32];        offset: 265 */
+   /* file's owner name */
+   /* null-terminated char string */
+   sprintf(header -> uname, "%31i", st.st_uid);
+
    /* gname[32];        offset: 297 */
+   /* file's group name */
+   /* null-terminated char string */
+   sprintf(header -> uname, "%31i", st.st_uid);
 
    /*wouldnt these just default to 0?*/
    /* devmajor[8];      offset: 329 */
+   sprintf(header -> devmajor, "00000000");
+
    /* devminor[8];      offset: 337 */
+   sprintf(header -> devminor, "00000000");
 
    /* checksum recalculation */
    /* this requires going through every component of the header */
