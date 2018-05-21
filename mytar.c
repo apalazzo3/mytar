@@ -118,19 +118,10 @@ char get_type(struct stat st){
          type = '0';
          break;
       case S_IFLNK:
-         type = '2';
-         break;
-      case S_IFCHR:
-         type = '3';
-         break;
-      case S_IFBLK:
-         type = '4';
+         type = '1';
          break;
       case S_IFDIR:
-         type = '5';
-         break;
-      case S_IFIFO:
-         type = '6';
+         type = '2';
          break;
       default:
          type = -1;
@@ -142,11 +133,12 @@ char get_type(struct stat st){
 
 /* Returns a pointer to a complete posix_header struct from tar.h */
 Header* get_header(FILE* fp, char path[256]) {
-   Header *header = NULL;
+   Header *header = malloc(sizeof(*header));
    struct stat st;
    int i;
    unsigned char temp[] = "       "; /* empty checksum first calc */
    char type = -1;
+   unsigned int empty = 0;
 
    /* name[100], offset: 0; prefix[155], offset: 345 */
    /* null-terminated char string */
@@ -192,8 +184,9 @@ Header* get_header(FILE* fp, char path[256]) {
 
    /* check first if file is even symlink type  */
    /* linkname[100];    offset: 157 */
+   printf("%c", type);
    if(type == '2'){
-      if(readlink(path, header -> linkname, 100) < 0){
+      if(readlink(path, header -> linkname, strlen(path)) < 0){
          fprintf(stderr,"usage: could not read link %s\n", path);
          exit(EXIT_FAILURE);
       }
@@ -208,25 +201,25 @@ Header* get_header(FILE* fp, char path[256]) {
 
    /* version[2];       offset: 263 */
 
-   sprintf(header -> version, "00");
+   sprintf(header -> version, "%02o", empty);
 
 
    /* uname[32];        offset: 265 */
    /* file's owner name */
    /* null-terminated char string */
-   sprintf(header -> uname, "%31i", st.st_uid);
+   sprintf(header -> uname, "%s", (getpwuid(st.st_uid)) -> pw_name);
 
    /* gname[32];        offset: 297 */
    /* file's group name */
    /* null-terminated char string */
-   sprintf(header -> uname, "%31i", st.st_uid);
+   sprintf(header -> gname, "%s", (getgrgid(st.st_gid)) -> gr_name);
 
    /*wouldnt these just default to 0?*/
    /* devmajor[8];      offset: 329 */
-   sprintf(header -> devmajor, "00000000");
+   /*sprintf(header -> devmajor, "");*/
 
    /* devminor[8];      offset: 337 */
-   sprintf(header -> devminor, "00000000");
+   /*sprintf(header -> devminor, "");*/
 
    /* checksum recalculation */
    /* this requires going through every component of the header */
@@ -234,6 +227,72 @@ Header* get_header(FILE* fp, char path[256]) {
    sprintf(header -> chksum, "%70o", chksum_2(header));
 
    return header;
+}
+
+
+/* check if tar exists for multiple files */
+void make_tar(Header *header, char path[256], FILE *fp, char * tar_name){
+   int fd;
+   int i = 0;
+   char *file;
+   char c;
+   int num_chars = 0;
+   int limit = 1024;
+   char empty[1536];
+
+   for(i = 0; i < 1536; i++){
+      empty[i] = 0;
+   }
+
+   /* check if file exists then delete it */
+   if((fopen(tar_name, "r")) != NULL){
+      remove(tar_name);
+   }
+
+   fd = open(tar_name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+   
+   /* write header to tar file */
+
+   write(fd, header -> name, 100);
+   write(fd, header -> mode, 8);
+   write(fd, header -> uid, 8);
+   write(fd, header -> gid, 8);
+   write(fd, header -> size, 12);
+   write(fd, header -> mtime, 12);
+   write(fd, header -> chksum, 8);
+   write(fd, header -> typeflag, 1);
+   write(fd, header -> linkname, 100); /* possile segfault */
+   write(fd, header -> magic, 6);
+   write(fd, header -> version, 2);
+   write(fd, header -> uname, 32);
+   write(fd, header -> gname, 32);
+   write(fd, header -> devmajor, 8);
+   write(fd, header -> devminor, 8);
+   write(fd, header -> prefix, 155);
+  
+   write(fd, empty, 12);
+
+   /* write file to tar file */
+   /*while((c = getc(fp)) != EOF){
+      write(fd, c, sizeof(char));
+   }*/
+
+
+   file = malloc(sizeof(char) * limit);
+   while((c = getc(fp)) != EOF){
+      if(num_chars + 1 == limit){
+          file = realloc(file, limit *= 2);
+      }
+      file[num_chars] = c;
+      num_chars++;
+   }
+
+   write(fd, file, (num_chars)); 
+   write(fd, empty, 1524);
+
+   fclose(fp);
+   free(header);
+   free(file);
 }
 
 int main (int argc, char *argv[]){
@@ -262,6 +321,9 @@ int main (int argc, char *argv[]){
 
    /* create struct header */
    header = get_header(fp, path);
+
+   /* create and write to tar file */
+   make_tar(header, path, fp, argv[2]);
 
    return 0;
 }
