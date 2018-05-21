@@ -160,13 +160,13 @@ Header* get_header(FILE* fp, char path[256]) {
    /* might need to add NULL terminators to these (?) */
 
    /* mode[8]; offset: 100 */
-   sprintf(header -> mode, "%01o", st.st_mode);
+   sprintf(header -> mode, "%07o", st.st_mode);
 
    /* uid[8];           offset: 108 */
-   sprintf(header -> uid, "%01o", st.st_uid);
+   sprintf(header -> uid, "%07o", st.st_uid);
 
    /* gid[8];           offset: 116 */
-   sprintf(header -> gid, "%01o", st.st_gid);
+   sprintf(header -> gid, "%07o", st.st_gid);
 
    /* size[12];         offset: 124 */
    sprintf(header -> size, "%011o", (int)st.st_size);
@@ -184,8 +184,9 @@ Header* get_header(FILE* fp, char path[256]) {
 
    /* check first if file is even symlink type  */
    /* linkname[100];    offset: 157 */
+   printf("%c", type);
    if(type == '2'){
-      if(readlink(path, header -> linkname, 100) < 0){
+      if(readlink(path, header -> linkname, strlen(path)) < 0){
          fprintf(stderr,"usage: could not read link %s\n", path);
          exit(EXIT_FAILURE);
       }
@@ -232,10 +233,21 @@ Header* get_header(FILE* fp, char path[256]) {
 /* check if tar exists for multiple files */
 void make_tar(Header *header, char path[256], FILE *fp, char * tar_name){
    int fd;
+   int i = 0;
    char *file;
    char c;
    int num_chars = 0;
    int limit = 1024;
+   char empty[1536];
+
+   for(i = 0; i < 1536; i++){
+      empty[i] = 0;
+   }
+
+   /* check if file exists then delete it */
+   if((fopen(tar_name, "r")) != NULL){
+      remove(tar_name);
+   }
 
    fd = open(tar_name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
    
@@ -257,7 +269,9 @@ void make_tar(Header *header, char path[256], FILE *fp, char * tar_name){
    write(fd, header -> devmajor, 8);
    write(fd, header -> devminor, 8);
    write(fd, header -> prefix, 155);
-   
+  
+   write(fd, empty, 12);
+
    /* write file to tar file */
    /*while((c = getc(fp)) != EOF){
       write(fd, c, sizeof(char));
@@ -274,7 +288,7 @@ void make_tar(Header *header, char path[256], FILE *fp, char * tar_name){
    }
 
    write(fd, file, (num_chars)); 
-   write(fd, '\0', 1024);
+   write(fd, empty, 1524);
 
    fclose(fp);
    free(header);
