@@ -5,6 +5,7 @@
 #define T_FLAG 1
 #define X_FLAG 2
 #define V_FLAG 3
+#define UID_PACKING_LEN 8
 
 #include "mytar.h"
 
@@ -131,6 +132,56 @@ char get_type(struct stat st){
    return type;
 }
 
+/* helper functions from lab spec */
+
+int header_insert_special_int(char* where, size_t size, int32_t val){
+    int err = 0;
+    if (val < 0 || size < sizeof(val)){
+        err++;
+    }
+    else{
+        memset(where, 0, size);
+        *(int32_t *)(where+size-sizeof(val)) = htonl(val);
+        *where |= 0x80;
+    }
+    return err;
+}
+
+int header_extract_special_int(char* where, int len){
+    int32_t val = -1;
+    if ( (len>=sizeof(val)) && (where[0] & 0x80)){
+        val = *(int32_t *)(where + len - sizeof(val));
+        val = ntohl(val);
+    }
+    return val;
+}
+
+
+void header_set_uid_bigsafe(char* buf, int32_t uid){
+    int toobig = 07777777;
+
+    /* Tests if bitpacking is needed */
+    if(uid > toobig){
+        header_insert_special_int(buf,UID_PACKING_LEN,uid);
+    }
+    else{
+        /* Do normal formatting as octal */
+    }
+}
+
+void header_parse_uid_bigsafe(char* uidstring, uid_t* uid){   
+
+    /* Tests if bitpacking was used */
+    if(uidstring[0] == '\0'){
+        *uid = header_extract_special_int(uidstring, UID_PACKING_LEN);
+    }
+    else{
+        /* Do normal parsing from octal */
+    }
+}
+
+/* above are helper functions from lab spec */
+
 /* Returns a pointer to a complete posix_header struct from tar.h */
 Header* get_header(FILE* fp, char path[256]) {
    Header *header = malloc(sizeof(*header));
@@ -163,10 +214,10 @@ Header* get_header(FILE* fp, char path[256]) {
    sprintf(header -> mode, "%07o", st.st_mode);
 
    /* uid[8];           offset: 108 */
-   sprintf(header -> uid, "%07o", st.st_uid);
+   sprintf(header -> uid, "%07o", (int)st.st_uid);
 
    /* gid[8];           offset: 116 */
-   sprintf(header -> gid, "%07o", st.st_gid);
+   sprintf(header -> gid, "%07o", (int)st.st_gid);
 
    /* size[12];         offset: 124 */
    sprintf(header -> size, "%011o", (int)st.st_size);
@@ -184,7 +235,6 @@ Header* get_header(FILE* fp, char path[256]) {
 
    /* check first if file is even symlink type  */
    /* linkname[100];    offset: 157 */
-   printf("%c", type);
    if(type == '2'){
       if(readlink(path, header -> linkname, strlen(path)) < 0){
          fprintf(stderr,"usage: could not read link %s\n", path);
@@ -246,14 +296,14 @@ void make_tar(Header *header, char path[256], FILE *fp, char * tar_name, int fd)
    /* write header to tar file */
 
    write(fd, header -> name, 100);
-   write(fd, header -> mode, 8);
-   write(fd, header -> uid, 8);
-   write(fd, header -> gid, 8);
+   write(fd, header -> mode, 8);       /* incorrect */
+   write(fd, header -> uid, 8);        /* incorrect */
+   write(fd, header -> gid, 8);        /* incorrect */
    write(fd, header -> size, 12);
-   write(fd, header -> mtime, 12);
-   write(fd, header -> chksum, 8);
-   write(fd, header -> typeflag, 1);
-   write(fd, header -> linkname, 100); /* possile segfault */
+   write(fd, header -> mtime, 12);     /* incorrect */
+   write(fd, header -> chksum, 8);     /* incorrect */
+   write(fd, header -> typeflag, 1);   /* incorrect */
+   write(fd, header -> linkname, 100); 
    write(fd, header -> magic, 6);
    write(fd, header -> version, 2);
    write(fd, header -> uname, 32);
