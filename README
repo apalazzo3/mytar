@@ -1,2 +1,8 @@
 Evan Jameson (ecjameso@calpoly.edu)
 Anthony Palazzo (aspalazz@calpoly.edu)
+
+We were close to finishing the c flag for our mytar file, but we spent several
+hours stuck on the uid field of the header. The given functions in the spec
+didn't give us the correct uid, and we were unable to write a workaround. 
+We will continue to work on this after the deadline if possible once we
+ask for help in office hours on Wednesday (23rd).
